@@ -292,6 +292,7 @@ function renderMain(){
     });
     if(ex.rows.some(row=>row.label==="Back-off ~90%"))
       html+=`<div class="subnote">Back-off sets ≈ 90% of your top-set weight</div>`;
+    html+=`</section>`;
   });
   html+=`<button class="clear" id="clearBtn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg> Clear this day’s log</button>
   <p class="foot">Pick the weight that hits the target RPE. When you beat the rep target below that RPE, add a little next time. Tick every set to mark the session done — the app opens on your next session. Everything saves automatically on this device.</p>`;
