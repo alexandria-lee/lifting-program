@@ -146,6 +146,8 @@ const RPE={1:"6",2:"7",3:"7",4:"8",5:"8",6:"8",7:"9",8:"6"};
 const STD={1:4,2:4,3:4,4:5,5:4,6:3,7:3,8:3};
 const DL={1:3,2:3,3:3,4:3,5:3,6:2,7:2,8:2};
 const phaseOf=w=>w<=2?"Reintroduction":w<=5?"Accumulation":w<=7?"Intensification":"Deload / Retest";
+/* Lower bound of a prescribed range, e.g. "6–8"→6, "8–10 / leg"→8, "5"→5. */
+const lowOf=s=>parseInt(s,10);
 
 /* Exercises performed with bodyweight only — no weight field shown. */
 const BODYWEIGHT=new Set(["Hanging Leg Raise"]);
@@ -211,7 +213,9 @@ function lastWeekRef(ex){
   let best=null;
   a.forEach(s=>{const w=parseFloat(s.weight);if(!isNaN(w)&&(!best||w>parseFloat(best.weight)))best=s;});
   if(!best)return null;
-  return `${best.weight}${unit} × ${best.reps||"–"}${best.rpe?` @ ${best.rpe}`:""}`;
+  // Reps/RPE are no longer logged — show last week's prescription instead.
+  const s=mainScheme(week-1,DAYS[day].type);
+  return `${best.weight}${unit} × ${lowOf(s.reps)} @ ${lowOf(s.rpe)}`;
 }
 
 /* ───────── SESSION COMPLETION ───────── */
@@ -270,11 +274,8 @@ function renderMain(){
       <div class="heads">
         <span style="width:26px;"></span>
         ${ex.bodyweight
-          ? `<span class="colhead" style="flex:1;">Bodyweight</span>
-             <span class="colhead" style="width:56px;text-align:center;">Reps</span>`
-          : `<span class="colhead" style="flex:1;">Weight (${unit})</span>
-             <span class="colhead" style="width:56px;text-align:center;">Reps</span>
-             ${ex.isMain?`<span class="colhead" style="width:48px;text-align:center;">RPE</span>`:""}`}
+          ? `<span class="colhead" style="flex:1;">Bodyweight</span>`
+          : `<span class="colhead" style="flex:1;">Weight (${unit})</span>`}
         <span style="width:38px;"></span>
       </div>`;
     ex.rows.forEach((row,i)=>{
@@ -282,11 +283,8 @@ function renderMain(){
       html+=`<div class="setRow${r.done?" done":""}" data-ex="${ei}" data-set="${i}">
         <div class="setNo data">${row.label==="Top set"?"T":i+1}</div>
         ${ex.bodyweight
-          ? `<span class="bwTag">Bodyweight</span>
-             <div style="width:56px;"><input class="cell" inputmode="numeric" placeholder="${row.reps}" data-f="reps" value="${r.reps}"></div>`
-          : `<div style="flex:1;"><input class="cell" inputmode="decimal" placeholder="–" data-f="weight" value="${r.weight}"></div>
-             <div style="width:56px;"><input class="cell" inputmode="numeric" placeholder="${row.reps}" data-f="reps" value="${r.reps}"></div>
-             ${ex.isMain?`<div style="width:48px;"><input class="cell" inputmode="decimal" placeholder="${row.rpe}" data-f="rpe" value="${r.rpe}"></div>`:""}`}
+          ? `<span class="bwTag">Bodyweight</span>`
+          : `<div style="flex:1;"><input class="cell" inputmode="decimal" placeholder="–" data-f="weight" value="${r.weight}"></div>`}
         <button class="check${r.done?" done":""}" data-f="done">${CHECK}</button>
       </div>`;
     });
@@ -330,7 +328,7 @@ function refreshStats(){
     tot++;const r=getRow(ex.name,i);
     if(r.done){
       done++;
-      const w=parseFloat(r.weight),rp=parseFloat(r.reps!==""?r.reps:row.reps);
+      const w=parseFloat(r.weight),rp=lowOf(row.reps);
       if(!isNaN(w)&&!isNaN(rp))vol+=w*rp;
     }
   }));
