@@ -47,7 +47,8 @@ header{
   padding:calc(12px + env(safe-area-inset-top)) 16px 14px;
 }
 /* Slim sticky workout HUD — appears on scroll once the header stats scroll off. */
-.hud{position:sticky;top:0;z-index:10;display:flex;gap:12px;align-items:center;
+/* Fixed (not sticky) so toggling it on scroll never shifts page content. */
+.hud{position:fixed;top:0;left:0;right:0;z-index:10;display:flex;gap:12px;align-items:center;
   background:rgba(255,255,255,.85);backdrop-filter:blur(10px);
   border-bottom:1px solid var(--line);
   padding:calc(8px + env(safe-area-inset-top)) 16px 8px;}
