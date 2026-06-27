@@ -201,27 +201,27 @@ const BODYWEIGHT=new Set(["Hanging Leg Raise"]);
 
 function mainScheme(week,type){
   if(type==="variation")
-    return week===8?{count:3,reps:"6",rpe:"6",intensify:false}:{count:4,reps:"6–8",rpe:"7–8",intensify:false};
+    return week===8?{count:3,reps:"6",rpe:"6",intensify:false}:{count:4,reps:"6",rpe:"7–8",intensify:false};
   const count=(type==="deadlift"?DL:STD)[week];
   return{count,reps:REPS[week],rpe:RPE[week],intensify:week===6||week===7};
 }
 
 const DAYS=[
  {short:"Squat",main:"Back Squat",type:"squat",acc:[
-   ["Romanian Deadlift",3,"8–10"],["Bulgarian Split Squat",3,"8–10 / leg"],["Leg Press",3,"10–12"],
-   ["Standing Calf Raise",4,"10–15"],["Hanging Leg Raise",3,"10–15"]]},
+   ["Romanian Deadlift",3,"8"],["Bulgarian Split Squat",3,"8 / leg"],["Leg Press",3,"10"],
+   ["Standing Calf Raise",4,"10"],["Hanging Leg Raise",3,"10"]]},
  {short:"Bench",main:"Bench Press",type:"standard",acc:[
-   ["Overhead Press",3,"6–8"],["Incline DB Press",3,"8–12"],["Weighted Dip",3,"8–12"],
-   ["Lateral Raise",3,"12–15"],["Triceps Pushdown",3,"10–15"]]},
+   ["Overhead Press",3,"6"],["Incline DB Press",3,"8"],["Weighted Dip",3,"8"],
+   ["Lateral Raise",3,"12"],["Triceps Pushdown",3,"10"]]},
  {short:"Deadlift",main:"Deadlift",type:"deadlift",acc:[
-   ["Barbell Row",4,"6–10"],["Pull-Up / Lat Pulldown",3,"8–12"],["Face Pull",3,"15–20"],
-   ["Barbell Curl",3,"10–12"],["Back Extension",3,"10–15"]]},
+   ["Barbell Row",4,"6"],["Pull-Up / Lat Pulldown",3,"8"],["Face Pull",3,"15"],
+   ["Barbell Curl",3,"10"],["Back Extension",3,"10"]]},
  {short:"Bench v.",main:"Bench Variation",type:"variation",hint:"Close-grip · Pause · Incline — pick one, keep it 8 wks",acc:[
-   ["Incline DB Press",3,"10–12"],["Seated Cable Row",3,"10–12"],["Lat Pulldown",3,"10–12"],
-   ["Lateral Raise",3,"12–15"],["Hammer Curl",3,"10–12"]]},
+   ["Incline DB Press",3,"10"],["Seated Cable Row",3,"10"],["Lat Pulldown",3,"10"],
+   ["Lateral Raise",3,"12"],["Hammer Curl",3,"10"]]},
  {short:"Squat v.",main:"Squat Variation",type:"variation",hint:"Front · Pause · Tempo — pick one, keep it 8 wks",acc:[
-   ["Romanian Deadlift",3,"8–10"],["Walking Lunge",3,"10–12 / leg"],["Leg Curl",3,"12–15"],
-   ["Leg Extension",3,"12–15"],["Seated Calf Raise",4,"12–15"]]}
+   ["Romanian Deadlift",3,"8"],["Walking Lunge",3,"10 / leg"],["Leg Curl",3,"12"],
+   ["Leg Extension",3,"12"],["Seated Calf Raise",4,"12"]]}
 ];
 
 function buildSession(week,d){
