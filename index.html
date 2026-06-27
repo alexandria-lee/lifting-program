@@ -59,16 +59,15 @@ header{
   border:1px solid var(--line);border-radius:12px;color:var(--chalk);cursor:pointer;font-size:20px;box-shadow:0 1px 3px rgba(38,33,29,.05);}
 .step:disabled{opacity:.3;}
 .wk{font-size:26px;line-height:1;font-weight:800;letter-spacing:-.02em;}
-.pills{display:flex;gap:7px;margin-top:16px;overflow-x:auto;padding-bottom:2px;}
-.pills::-webkit-scrollbar{display:none;}
-.pill{flex:0 0 auto;min-width:60px;padding:8px 5px;border-radius:13px;border:1px solid var(--line);
+.pills{display:flex;gap:7px;margin-top:16px;}
+.pill{flex:1;padding:8px 5px;border-radius:13px;border:1px solid var(--line);
   background:var(--surface);color:var(--steel);text-align:center;line-height:1.1;cursor:pointer;box-shadow:0 1px 3px rgba(38,33,29,.05);}
 .pill.active{background:var(--amber);color:#FFFFFF;border-color:var(--amber);box-shadow:0 4px 12px rgba(255,107,94,.30);}
 .pill.done{border-color:var(--amber);}
 .pill.done b{color:var(--amber);}
 .pill.active.done b{color:#FFFFFF;}
-.pill b{font-size:13px;font-weight:800;}
-.pill span{display:block;font-size:9.5px;margin-top:1px;font-weight:600;}
+.pill b{font-size:13px;font-weight:800;white-space:nowrap;}
+.pill span{display:block;font-size:9.5px;margin-top:1px;font-weight:400;}
 .railBg{height:7px;border-radius:99px;background:var(--surface2);overflow:hidden;}
 .railFill{height:100%;border-radius:99px;background:var(--amber);transition:width .35s ease;}
 
@@ -447,7 +446,7 @@ const BIGCHECK='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stro
 function renderPills(){
   $("pills").innerHTML=DAYS.map((d,i)=>{
     const done=sessionStatus(week,i).complete;
-    return`<button class="pill${i===day?" active":""}${done?" done":""}" data-day="${i}"><b>D${i+1}${done?" ✓":""}</b><span>${d.short}</span></button>`;
+    return`<button class="pill${i===day?" active":""}${done?" done":""}" data-day="${i}"><b>${done?"✓ ":""}Day ${i+1}</b><span>${d.short}</span></button>`;
   }).join("");
 }
 
