@@ -326,9 +326,13 @@ function updateSessionBanner(tot,done){
 function refreshStats(){
   const session=window.__session||buildSession(week,day);
   let tot=0,done=0,vol=0;
-  session.forEach(ex=>ex.rows.forEach((_,i)=>{
-    tot++;const r=getRow(ex.name,i);if(r.done)done++;
-    const w=parseFloat(r.weight),rp=parseFloat(r.reps);if(!isNaN(w)&&!isNaN(rp))vol+=w*rp;
+  session.forEach(ex=>ex.rows.forEach((row,i)=>{
+    tot++;const r=getRow(ex.name,i);
+    if(r.done){
+      done++;
+      const w=parseFloat(r.weight),rp=parseFloat(r.reps!==""?r.reps:row.reps);
+      if(!isNaN(w)&&!isNaN(rp))vol+=w*rp;
+    }
   }));
   $("doneCt").textContent=done;$("totCt").textContent=tot;
   $("rail").style.width=(tot?Math.round(done/tot*100):0)+"%";
