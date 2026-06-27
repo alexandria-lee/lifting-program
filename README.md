@@ -1,4 +1,4 @@
-# Iron Log
+# Strength Trainer
 
 A phone-friendly tracker for an 8-week lifting block. Tick each set as you go,
 log the weight you used, and the app remembers everything between sessions and

@@ -1,4 +1,4 @@
-/* Iron Log service worker — caches the app shell so the app loads offline.
+/* Strength Trainer service worker — caches the app shell so the app loads offline.
    The page (index.html) is fetched network-first so updates roll out on the
    next online launch without needing a cache bump; other assets are
    cache-first for speed. Bump CACHE only when you want to force-purge. */
