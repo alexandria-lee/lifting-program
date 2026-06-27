@@ -22,17 +22,19 @@ weights are stored locally on your device.
 ## Use it on your phone (GitHub Pages)
 
 This repo deploys automatically via GitHub Actions (`.github/workflows/deploy.yml`).
+The workflow enables GitHub Pages for you on the first run (`enablement: true`),
+so no manual setup is normally needed.
 
-**One-time setup:** in this repository on GitHub, go to
-**Settings → Pages → Build and deployment → Source** and choose **"GitHub Actions"**.
-
-After that, every push to the `claude/workout-tracker-mobile-1m9ee5` branch
-redeploys the app. Once the "Deploy to GitHub Pages" workflow finishes, the app
-is live at:
+Every push to the `claude/workout-tracker-mobile-1m9ee5` branch redeploys the app.
+Once the "Deploy to GitHub Pages" workflow finishes, the app is live at:
 
 ```
 https://alexandria-lee.github.io/lifting-program/
 ```
+
+If the workflow ever can't enable Pages automatically (e.g. restricted Actions
+permissions), enable it once by hand: **Settings → Pages → Build and deployment
+→ Source → "GitHub Actions"**, then re-run the workflow.
 
 On your phone, open that URL and:
 
