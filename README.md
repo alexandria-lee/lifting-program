@@ -18,6 +18,9 @@ weights are stored locally on your device.
   with a ✓, and **opens on the next session you still need to do** — so at the
   gym you always know what's next.
 - **Installable PWA** — add it to your home screen and it works offline.
+- **Backup & restore** — export all your logs to a file (Files / iCloud Drive)
+  and restore them later. Your data is otherwise only on this device, so the
+  backup is your safety net before reinstalling or switching phones.
 
 ## Use it on your phone (GitHub Pages)
 
@@ -42,6 +45,44 @@ On your phone, open that URL and:
 - **Android (Chrome):** menu → *Add to Home screen* / *Install app*.
 
 It then opens full-screen like a native app and runs offline at the gym.
+
+## Back up & restore your data
+
+Your sets and weights live only in this device's browser storage. Deleting the
+home-screen app, clearing website data, or switching phones wipes them — so
+keep a backup file, which lives *outside* the app where those actions can't
+touch it.
+
+- **Backup** (top-right) packages everything into a small `.json` file and opens
+  the share sheet — choose **Save to Files** (iCloud Drive is safest) or AirDrop
+  / email it to yourself.
+- **Restore** opens a file picker; choose a backup to load it back. It *replaces*
+  what's in the app (with a confirm), and you get an **Undo** straight after.
+- A small dot on **Backup** means you've logged sets since your last backup.
+
+**When to back up:** after each session, and always before deleting/reinstalling
+the app, clearing Safari data, a big iOS update, or moving to a new phone.
+
+## Evolving the data schema (for future changes)
+
+Backups and on-device storage share one versioned shape so the app can change
+without losing entries. On every launch the app migrates stored data forward to
+`CURRENT_SCHEMA`; imports run through the same pipeline. The relevant pieces live
+in the `BACKUP / MIGRATION` block of `index.html`:
+
+- **Adding an optional field** (e.g. a per-set `notes`): **no schema bump.**
+  `normRow()` fills missing fields with defaults and preserves unknown ones, so
+  old data and old backups just gain the new field empty.
+- **Renaming/removing a field, changing a key format, or re-meaning a value:**
+  bump `CURRENT_SCHEMA` by 1 and add a `MIGRATIONS[n]` step that upgrades data
+  from schema `n` to `n+1`. Every old backup and existing device upgrades
+  automatically.
+- **Changing the unit** (kg ↔ lb): change `APP_UNIT`. Import compares it against
+  the file's `app.unit` and offers to convert rather than silently relabelling.
+
+Guard rails: a backup from a *newer* schema than the app is refused (update the
+app first); an unrecognised/corrupt file is rejected without touching live data;
+and a restore snapshots the previous state so it can be undone.
 
 ## Run it locally
 

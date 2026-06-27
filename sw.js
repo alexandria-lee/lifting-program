@@ -2,7 +2,7 @@
    The page (index.html) is fetched network-first so updates roll out on the
    next online launch without needing a cache bump; other assets are
    cache-first for speed. Bump CACHE only when you want to force-purge. */
-const CACHE = 'ironlog-v4';
+const CACHE = 'ironlog-v5';
 const SHELL = ['.', 'index.html', 'manifest.json', 'icon.svg'];
 
 self.addEventListener('install', e => {

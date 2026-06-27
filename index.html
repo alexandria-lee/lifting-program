@@ -104,6 +104,24 @@ main{padding:0 12px 110px;}
 .nextBtn{margin-top:12px;width:100%;padding:13px;background:var(--amber);color:#FFFFFF;border:none;
   border-radius:13px;font-size:14px;font-weight:800;cursor:pointer;box-shadow:0 6px 16px rgba(255,107,94,.30);}
 .allDone{margin-top:10px;font-size:12.5px;color:var(--amber);font-weight:700;}
+
+/* backup / restore toolbar */
+.tbtn{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:10px;
+  padding:6px 10px;font-size:11.5px;font-weight:700;color:var(--steel);cursor:pointer;
+  box-shadow:0 1px 3px rgba(38,33,29,.05);}
+.tbtn .dot{position:absolute;top:-3px;right:-3px;width:9px;height:9px;border-radius:50%;
+  background:var(--amber);box-shadow:0 0 0 2px var(--bg);}
+.tbtn .dot[hidden]{display:none;}
+
+/* toast (import undo, etc.) */
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:50;
+  display:flex;gap:12px;align-items:center;max-width:340px;width:calc(100% - 32px);
+  background:var(--chalk);color:#fff;border-radius:14px;padding:12px 14px;
+  font-size:13px;line-height:1.3;box-shadow:0 8px 24px rgba(38,33,29,.28);}
+.toast span{flex:1;}
+.toast button{flex:0 0 auto;background:rgba(255,255,255,.16);color:#fff;border:none;border-radius:9px;
+  padding:7px 12px;font-weight:700;font-size:13px;cursor:pointer;}
+.toast[hidden]{display:none;}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
 </style>
 </head>
@@ -113,6 +131,10 @@ main{padding:0 12px 110px;}
     <div class="row" style="gap:8px;">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FF6B5E" stroke-width="2" stroke-linecap="round"><line x1="6" y1="12" x2="18" y2="12"/><line x1="4.5" y1="8" x2="4.5" y2="16"/><line x1="8" y1="6.5" x2="8" y2="17.5"/><line x1="16" y1="6.5" x2="16" y2="17.5"/><line x1="19.5" y1="8" x2="19.5" y2="16"/></svg>
       <span class="eyebrow">8-Week Block</span>
+    </div>
+    <div class="row" style="gap:6px;">
+      <button class="tbtn" id="exportBtn" title="Save a backup file of all your logs">Backup<span class="dot" id="exDot" hidden></span></button>
+      <button class="tbtn" id="importBtn" title="Restore your logs from a backup file">Restore</button>
     </div>
   </div>
 
@@ -144,6 +166,7 @@ main{padding:0 12px 110px;}
 
 <div id="banner"></div>
 <main id="main"></main>
+<div id="toast" class="toast" hidden></div>
 
 <script>
 /* ───────── PROGRAM DATA ───────── */
@@ -194,9 +217,170 @@ function buildSession(week,d){
 }
 
 /* ───────── STATE + STORAGE ───────── */
-const LK="ironlog-logs", PK="ironlog-pos";
+const LK="ironlog-logs", PK="ironlog-pos", MK="ironlog-meta",
+      PREVK="ironlog-logs-prev", EXK="ironlog-exhash";
 let logs={}, week=1, day=0, saveT=null;
-try{logs=JSON.parse(localStorage.getItem(LK))||{};}catch(e){logs={};}
+
+/* ───────── BACKUP / MIGRATION ─────────
+   The backup file and on-device storage share ONE versioned data shape so the
+   app can evolve without losing entries. See README "Evolving the data schema".
+
+   Rule of thumb when iterating:
+   • Adding an OPTIONAL field (e.g. notes): no schema bump — normRow() fills the
+     default, so old data just gets the new field empty.
+   • Renaming/removing a field, changing a key format, or re-meaning a value:
+     bump CURRENT_SCHEMA by 1 and add a MIGRATIONS[n] step that upgrades n -> n+1.
+   • Changing the unit (kg<->lb): keep it as APP_UNIT — import detects a mismatch
+     against the file's app.unit and offers to convert, rather than silently
+     relabelling numbers. */
+const BACKUP_FORMAT="strength-trainer-backup";
+const CURRENT_SCHEMA=1;
+const APP_UNIT="kg";
+
+/* Forward-only migrations. MIGRATIONS[v] takes the whole {logs,pos} blob at
+   schema v and returns it at schema v+1. Pure functions; add one per breaking
+   change. (Empty today — schema 1 is the current shape.) */
+const MIGRATIONS={
+  // 1:(d)=>{ /* example: d.logs = renameSomething(d.logs); */ return d; },
+};
+function migrate(data,from,to){
+  for(let v=from;v<to;v++){if(MIGRATIONS[v])data=MIGRATIONS[v](data);}
+  return data;
+}
+/* Coerce one stored set to the canonical shape, preserving any unknown keys so
+   a newer field survives a round-trip through an older app. */
+function normRow(r){return{weight:"",reps:"",rpe:"",done:false,...(r&&typeof r==="object"?r:{})};}
+function normLogs(L){
+  const out={};
+  if(L&&typeof L==="object")for(const k in L){
+    const d=L[k];if(!d||typeof d!=="object")continue;
+    out[k]={};
+    for(const ex in d)if(Array.isArray(d[ex]))out[k][ex]=d[ex].map(normRow);
+  }
+  return out;
+}
+function readJSON(k,fb){try{const v=JSON.parse(localStorage.getItem(k));return v==null?fb:v;}catch(e){return fb;}}
+
+/* Load on-device data and migrate it forward to CURRENT_SCHEMA on every launch. */
+(function loadAndMigrate(){
+  const meta=readJSON(MK,null);
+  const raw=readJSON(LK,{});
+  const pos=readJSON(PK,{});
+  const hasData=raw&&typeof raw==="object"&&Object.keys(raw).length>0;
+  // No meta means pre-versioning data: treat existing data as schema 1, a fresh
+  // install as already-current (nothing to migrate).
+  const stored=(meta&&typeof meta.schema==="number")?meta.schema:(hasData?1:CURRENT_SCHEMA);
+  let data={logs:raw,pos};
+  if(stored<CURRENT_SCHEMA)data=migrate(data,stored,CURRENT_SCHEMA);
+  logs=normLogs(data.logs||{});
+  try{localStorage.setItem(MK,JSON.stringify({schema:CURRENT_SCHEMA,unit:APP_UNIT}));}catch(e){}
+  if(stored<CURRENT_SCHEMA){try{localStorage.setItem(LK,JSON.stringify(logs));}catch(e){}}
+})();
+
+/* Build the export envelope. */
+function buildBackup(){
+  return{format:BACKUP_FORMAT,schema:CURRENT_SCHEMA,exportedAt:new Date().toISOString(),
+    app:{unit:APP_UNIT},data:{logs:normLogs(logs),pos:readJSON(PK,{week,day})}};
+}
+/* Validate + migrate an imported envelope. Returns {ok,...} without touching
+   live data — the caller decides whether to commit. */
+function applyBackup(obj){
+  if(!obj||obj.format!==BACKUP_FORMAT||typeof obj.schema!=="number"||!obj.data||typeof obj.data!=="object")
+    return{ok:false,error:"This doesn't look like a Strength Trainer backup file."};
+  if(obj.schema>CURRENT_SCHEMA)
+    return{ok:false,error:"This backup was made by a newer version of the app. Update the app, then import again."};
+  const fileUnit=(obj.app&&obj.app.unit)||APP_UNIT;
+  let data={logs:obj.data.logs||{},pos:obj.data.pos||{}};
+  if(obj.schema<CURRENT_SCHEMA)data=migrate(data,obj.schema,CURRENT_SCHEMA);
+  return{ok:true,unitMismatch:fileUnit!==APP_UNIT,fileUnit,logs:normLogs(data.logs),pos:data.pos};
+}
+function convertUnits(L,from,to){
+  const f=(from==="kg"&&to==="lb")?2.20462:(from==="lb"&&to==="kg")?0.453592:1;
+  if(f===1)return L;
+  const out={};
+  for(const k in L){out[k]={};for(const ex in L[k])out[k][ex]=L[k][ex].map(r=>{
+    const w=parseFloat(r.weight);
+    return{...r,weight:isNaN(w)?r.weight:String(Math.round(w*f*2)/2)};});}
+  return out;
+}
+function countSets(L){let n=0;for(const k in L)for(const ex in L[k])L[k][ex].forEach(r=>{if(r.weight!==""||r.done)n++;});return n;}
+
+/* Replace live data with an imported set, snapshotting first so it can be undone. */
+function commitImport(newLogs,newPos){
+  try{localStorage.setItem(PREVK,localStorage.getItem(LK)||"{}");}catch(e){}
+  logs=newLogs;
+  try{localStorage.setItem(LK,JSON.stringify(logs));}catch(e){}
+  try{localStorage.setItem(MK,JSON.stringify({schema:CURRENT_SCHEMA,unit:APP_UNIT}));}catch(e){}
+  if(newPos&&typeof newPos.week==="number"){week=newPos.week;day=+newPos.day||0;savePos();}
+  markExported();
+}
+function undoImport(){
+  const p=localStorage.getItem(PREVK);if(p==null)return false;
+  try{logs=normLogs(JSON.parse(p)||{});localStorage.setItem(LK,p);localStorage.removeItem(PREVK);}catch(e){return false;}
+  return true;
+}
+
+/* "Backup recommended" nudge: dot shows when there are logged sets that differ
+   from the last exported/imported snapshot. */
+function logsHash(){const s=JSON.stringify(logs);let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))|0;return String(h);}
+function markExported(){try{localStorage.setItem(EXK,logsHash());}catch(e){}refreshNudge();}
+function needsBackup(){return Object.keys(logs).length>0 && localStorage.getItem(EXK)!==logsHash();}
+function refreshNudge(){const d=$("exDot");if(d)d.hidden=!needsBackup();}
+
+/* ───────── EXPORT / IMPORT (UI) ───────── */
+async function doExport(){
+  const json=JSON.stringify(buildBackup(),null,2);
+  const fname=`strength-trainer-backup-${new Date().toISOString().slice(0,10)}.json`;
+  // Native share sheet is the dependable path inside an iOS home-screen PWA.
+  try{
+    const file=new File([json],fname,{type:"application/json"});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){
+      await navigator.share({files:[file],title:"Strength Trainer backup"});
+      markExported();return;
+    }
+  }catch(e){if(e&&e.name==="AbortError")return;/* else fall back to download */}
+  const url=URL.createObjectURL(new Blob([json],{type:"application/json"}));
+  const a=document.createElement("a");a.href=url;a.download=fname;
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  markExported();
+}
+function doImport(){
+  const inp=document.createElement("input");
+  inp.type="file";inp.accept="application/json,.json";
+  inp.onchange=()=>{
+    const f=inp.files&&inp.files[0];if(!f)return;
+    const rd=new FileReader();
+    rd.onload=()=>{
+      let obj;try{obj=JSON.parse(rd.result);}catch(e){alert("Couldn't read that file — it isn't valid JSON.");return;}
+      const res=applyBackup(obj);
+      if(!res.ok){alert(res.error);return;}
+      let toLoad=res.logs;
+      if(res.unitMismatch){
+        const convert=confirm(`This backup was saved in ${res.fileUnit}, but the app uses ${APP_UNIT}.\n\nOK — convert values (${res.fileUnit}→${APP_UNIT}).\nCancel — import the numbers unchanged.`);
+        if(convert)toLoad=convertUnits(toLoad,res.fileUnit,APP_UNIT);
+      }
+      const n=countSets(toLoad);
+      if(!confirm(`Restore this backup?\n\nIt has ${n} logged set${n===1?"":"s"} and will replace what's in the app now. You can undo straight after.`))return;
+      commitImport(toLoad,res.pos);
+      renderAll();window.scrollTo(0,0);
+      toast(`Restored ${n} set${n===1?"":"s"}.`,"Undo",()=>{if(undoImport()){renderAll();toast("Import undone.");}});
+    };
+    rd.readAsText(f);
+  };
+  inp.click();
+}
+
+/* ───────── TOAST ───────── */
+let toastT=null;
+function toast(msg,actionLabel,onAction,ms=8000){
+  const el=$("toast");el.innerHTML="";
+  const span=document.createElement("span");span.textContent=msg;el.appendChild(span);
+  if(actionLabel){const b=document.createElement("button");b.textContent=actionLabel;
+    b.onclick=()=>{hideToast();onAction&&onAction();};el.appendChild(b);}
+  el.hidden=false;clearTimeout(toastT);if(ms)toastT=setTimeout(hideToast,ms);
+}
+function hideToast(){$("toast").hidden=true;clearTimeout(toastT);}
 
 const keyFor=(w,d)=>`w${w}d${d}`;
 const keyOf=()=>keyFor(week,day);
@@ -341,11 +525,14 @@ function refreshStats(){
   $("vol").textContent=vol?Math.round(vol).toLocaleString():"—";
   renderPills();
   updateSessionBanner(tot,done);
+  refreshNudge();
 }
 
 function renderAll(){renderHeader();renderMain();refreshStats();savePos();}
 
 /* ───────── EVENTS ───────── */
+$("exportBtn").onclick=doExport;
+$("importBtn").onclick=doImport;
 $("wkPrev").onclick=()=>{if(week>1){week--;renderAll();}};
 $("wkNext").onclick=()=>{if(week<8){week++;renderAll();}};
 $("pills").onclick=e=>{const b=e.target.closest(".pill");if(b){day=+b.dataset.day;renderAll();}};
