@@ -1,6 +1,6 @@
 /* Iron Log service worker — caches the app shell so the app loads offline.
    Bump CACHE when any shell file changes to roll out the update. */
-const CACHE = 'ironlog-v1';
+const CACHE = 'ironlog-v2';
 const SHELL = ['.', 'index.html', 'manifest.json', 'icon.svg'];
 
 self.addEventListener('install', e => {
