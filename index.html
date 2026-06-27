@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+<title>Iron Log — 8-Week Block</title>
+
+<!-- PWA / home-screen app -->
+<meta name="theme-color" content="#101316" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Iron Log" />
+<link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20180%20180'%3E%3Crect%20width='180'%20height='180'%20rx='40'%20fill='%23101316'/%3E%3Cg%20stroke='%23F5A524'%20stroke-width='13'%20stroke-linecap='round'%3E%3Cline%20x1='50'%20y1='90'%20x2='130'%20y2='90'/%3E%3Cline%20x1='44'%20y1='66'%20x2='44'%20y2='114'/%3E%3Cline%20x1='66'%20y1='58'%20x2='66'%20y2='122'/%3E%3Cline%20x1='114'%20y1='58'%20x2='114'%20y2='122'/%3E%3Cline%20x1='136'%20y1='66'%20x2='136'%20y2='114'/%3E%3C/g%3E%3C/svg%3E" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='7'%20fill='%23101316'/%3E%3Cg%20stroke='%23F5A524'%20stroke-width='2.4'%20stroke-linecap='round'%3E%3Cline%20x1='9'%20y1='16'%20x2='23'%20y2='16'/%3E%3Cline%20x1='8'%20y1='12'%20x2='8'%20y2='20'/%3E%3Cline%20x1='12'%20y1='10'%20x2='12'%20y2='22'/%3E%3Cline%20x1='20'%20y1='10'%20x2='20'%20y2='22'/%3E%3Cline%20x1='24'%20y1='12'%20x2='24'%20y2='20'/%3E%3C/g%3E%3C/svg%3E" />
+
+<style>
+:root{
+  --bg:#101316; --surface:#1A2026; --surface2:#212931; --line:#2C353E;
+  --chalk:#ECEFF2; --steel:#98A1AB; --steelDim:#646E78; --amber:#F5A524; --amberDim:rgba(245,165,36,.12);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0;}
+html,body{height:100%;}
+body{
+  background:radial-gradient(120% 60% at 50% -10%, #1A2128 0%, var(--bg) 55%) no-repeat;
+  background-attachment:fixed; color:var(--chalk);
+  font-family:ui-sans-serif,system-ui,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+.data{font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace;font-variant-numeric:tabular-nums;font-weight:600;}
+.eyebrow{font-size:10px;text-transform:uppercase;letter-spacing:.16em;color:var(--steel);font-weight:600;}
+.colhead{font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--steelDim);font-weight:600;}
+
+header{
+  position:sticky;top:0;z-index:10;
+  background:rgba(16,19,22,.92);backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);
+  padding:calc(12px + env(safe-area-inset-top)) 16px 14px;
+}
+.row{display:flex;align-items:center;}
+.between{justify-content:space-between;}
+.unit{font-family:ui-monospace,Menlo,monospace;font-size:11px;font-weight:700;letter-spacing:.08em;
+  color:var(--amber);border:1px solid var(--line);background:var(--surface);border-radius:7px;padding:4px 10px;cursor:pointer;}
+.step{width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:var(--surface);
+  border:1px solid var(--line);border-radius:10px;color:var(--chalk);cursor:pointer;font-size:20px;}
+.step:disabled{opacity:.25;}
+.wk{font-size:26px;line-height:1;}
+.pills{display:flex;gap:6px;margin-top:16px;overflow-x:auto;padding-bottom:2px;}
+.pills::-webkit-scrollbar{display:none;}
+.pill{flex:0 0 auto;min-width:60px;padding:7px 4px;border-radius:11px;border:1px solid var(--line);
+  background:var(--surface);color:var(--steel);text-align:center;line-height:1.1;cursor:pointer;}
+.pill.active{background:var(--amber);color:#161108;border-color:var(--amber);}
+.pill.done{border-color:var(--amber);}
+.pill.done b{color:var(--amber);}
+.pill.active.done b{color:#161108;}
+.pill b{font-family:ui-monospace,Menlo,monospace;font-size:13px;}
+.pill span{display:block;font-size:9.5px;margin-top:1px;}
+.railBg{height:6px;border-radius:99px;background:var(--surface2);overflow:hidden;}
+.railFill{height:100%;border-radius:99px;background:var(--amber);transition:width .35s ease;}
+
+.banner{display:flex;gap:8px;margin:12px 12px 0;padding:11px 13px;background:var(--amberDim);
+  border:1px solid var(--line);border-radius:12px;font-size:12.5px;line-height:1.45;}
+main{padding:0 12px 110px;}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 14px 12px;margin-top:12px;}
+.card.main{border-left:3px solid var(--amber);}
+.card h2{font-size:14.5px;font-weight:700;letter-spacing:-.01em;}
+.card.main h2{font-size:17px;}
+.hint{font-size:11px;color:var(--steelDim);margin-top:4px;font-style:italic;}
+.last{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--amber);margin-top:2px;}
+.last.empty{color:var(--steelDim);}
+.heads{display:flex;align-items:center;gap:8px;margin:12px 2px 2px;}
+.setRow{display:flex;align-items:center;gap:8px;padding:6px 4px;border-radius:10px;transition:background .15s;}
+.setRow.done{background:var(--amberDim);}
+.setNo{width:26px;height:30px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;
+  font-size:12px;color:var(--steelDim);font-weight:600;}
+.cell{height:34px;background:var(--surface2);border:1px solid var(--line);border-radius:9px;color:var(--chalk);
+  font-family:ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums;font-size:15px;font-weight:600;
+  text-align:center;outline:none;min-width:0;width:100%;}
+.cell::placeholder{color:var(--steelDim);font-weight:400;}
+.cell:focus{border-color:var(--amber);background:#262E36;}
+.bwTag{flex:1;font-size:11px;color:var(--steelDim);font-style:italic;padding-left:2px;}
+.check{width:38px;height:34px;flex:0 0 auto;border-radius:9px;border:1px solid var(--line);background:transparent;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.check.done{background:var(--amber);border-color:var(--amber);}
+.check svg{display:none;}
+.check.done svg{display:block;}
+.subnote{font-size:10.5px;color:var(--steelDim);margin-top:6px;padding-left:4px;}
+.clear{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;margin-top:18px;padding:10px;
+  background:transparent;border:1px solid var(--line);border-radius:11px;color:var(--steel);font-size:12.5px;cursor:pointer;}
+.foot{font-size:11.5px;line-height:1.5;color:var(--steelDim);margin-top:14px;padding:0 2px;}
+
+/* session progress / next-up */
+.nextUp{display:flex;gap:8px;align-items:center;margin-top:14px;padding:9px 12px;
+  background:var(--amberDim);border:1px solid var(--line);border-radius:11px;}
+.doneCard{background:var(--amberDim);border:1px solid var(--amber);border-radius:14px;padding:14px;margin-top:14px;}
+.nextBtn{margin-top:12px;width:100%;padding:13px;background:var(--amber);color:#161108;border:none;
+  border-radius:11px;font-size:14px;font-weight:700;cursor:pointer;}
+.allDone{margin-top:10px;font-size:12.5px;color:var(--amber);font-weight:600;}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+</head>
+<body>
+<header>
+  <div class="row between">
+    <div class="row" style="gap:8px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F5A524" stroke-width="2" stroke-linecap="round"><line x1="6" y1="12" x2="18" y2="12"/><line x1="4.5" y1="8" x2="4.5" y2="16"/><line x1="8" y1="6.5" x2="8" y2="17.5"/><line x1="16" y1="6.5" x2="16" y2="17.5"/><line x1="19.5" y1="8" x2="19.5" y2="16"/></svg>
+      <span class="eyebrow">8-Week Block</span>
+    </div>
+    <button class="unit" id="unitBtn">KG</button>
+  </div>
+
+  <div class="row between" style="margin-top:12px;">
+    <button class="step" id="wkPrev">‹</button>
+    <div style="text-align:center;">
+      <div class="data wk"><span id="wkNum">WEEK 1</span><span style="color:var(--steelDim);"> / 8</span></div>
+      <div class="eyebrow" id="phase" style="margin-top:4px;">Reintroduction</div>
+    </div>
+    <button class="step" id="wkNext">›</button>
+  </div>
+
+  <div class="pills" id="pills"></div>
+
+  <div class="row" style="gap:12px;margin-top:16px;">
+    <div style="flex:1;">
+      <div class="row between" style="margin-bottom:6px;">
+        <span class="eyebrow">Sets logged</span>
+        <span class="data" style="font-size:12px;"><span id="doneCt">0</span><span style="color:var(--steelDim);">/<span id="totCt">0</span></span></span>
+      </div>
+      <div class="railBg"><div class="railFill" id="rail" style="width:0%;"></div></div>
+    </div>
+    <div style="text-align:right;padding-left:12px;border-left:1px solid var(--line);">
+      <div class="eyebrow">Volume</div>
+      <div class="data" style="font-size:14px;margin-top:2px;"><span id="vol">—</span><span style="font-size:10px;color:var(--steelDim);" id="volUnit"> kg</span></div>
+    </div>
+  </div>
+</header>
+
+<div id="banner"></div>
+<main id="main"></main>
+
+<script>
+/* ───────── PROGRAM DATA ───────── */
+const REPS={1:"5",2:"5",3:"4",4:"4",5:"4",6:"3",7:"3",8:"3"};
+const RPE={1:"6",2:"7",3:"7",4:"8",5:"8",6:"8",7:"9",8:"6"};
+const STD={1:4,2:4,3:4,4:5,5:4,6:3,7:3,8:3};
+const DL={1:3,2:3,3:3,4:3,5:3,6:2,7:2,8:2};
+const phaseOf=w=>w<=2?"Reintroduction":w<=5?"Accumulation":w<=7?"Intensification":"Deload / Retest";
+
+/* Exercises performed with bodyweight only — no weight field shown. */
+const BODYWEIGHT=new Set(["Hanging Leg Raise"]);
+
+function mainScheme(week,type){
+  if(type==="variation")
+    return week===8?{count:3,reps:"6",rpe:"6",intensify:false}:{count:4,reps:"6–8",rpe:"7–8",intensify:false};
+  const count=(type==="deadlift"?DL:STD)[week];
+  return{count,reps:REPS[week],rpe:RPE[week],intensify:week===6||week===7};
+}
+
+const DAYS=[
+ {short:"Squat",main:"Back Squat",type:"squat",acc:[
+   ["Romanian Deadlift",3,"8–10"],["Bulgarian Split Squat",3,"8–10 / leg"],["Leg Press",3,"10–12"],
+   ["Standing Calf Raise",4,"10–15"],["Hanging Leg Raise",3,"10–15"]]},
+ {short:"Bench",main:"Bench Press",type:"standard",acc:[
+   ["Overhead Press",3,"6–8"],["Incline DB Press",3,"8–12"],["Weighted Dip",3,"8–12"],
+   ["Lateral Raise",3,"12–15"],["Triceps Pushdown",3,"10–15"]]},
+ {short:"Deadlift",main:"Deadlift",type:"deadlift",acc:[
+   ["Barbell Row",4,"6–10"],["Pull-Up / Lat Pulldown",3,"8–12"],["Face Pull",3,"15–20"],
+   ["Barbell Curl",3,"10–12"],["Back Extension",3,"10–15"]]},
+ {short:"Bench v.",main:"Bench Variation",type:"variation",hint:"Close-grip · Pause · Incline — pick one, keep it 8 wks",acc:[
+   ["Incline DB Press",3,"10–12"],["Seated Cable Row",3,"10–12"],["Lat Pulldown",3,"10–12"],
+   ["Lateral Raise",3,"12–15"],["Hammer Curl",3,"10–12"]]},
+ {short:"Squat v.",main:"Squat Variation",type:"variation",hint:"Front · Pause · Tempo — pick one, keep it 8 wks",acc:[
+   ["Romanian Deadlift",3,"8–10"],["Walking Lunge",3,"10–12 / leg"],["Leg Curl",3,"12–15"],
+   ["Leg Extension",3,"12–15"],["Seated Calf Raise",4,"12–15"]]}
+];
+
+function buildSession(week,d){
+  const day=DAYS[d],s=mainScheme(week,day.type);
+  const mainRows=Array.from({length:s.count},(_,i)=>({reps:s.reps,rpe:s.rpe,
+    label:s.intensify?(i===0?"Top set":"Back-off ~90%"):null}));
+  const main={name:day.main,isMain:true,bodyweight:false,hint:day.hint,target:`${s.count} × ${s.reps} · RPE ${s.rpe}`,rows:mainRows};
+  const accs=day.acc.map(([name,sets,range])=>({name,isMain:false,bodyweight:BODYWEIGHT.has(name),target:`${sets} × ${range}`,
+    rows:Array.from({length:sets},()=>({reps:range,rpe:null,label:null}))}));
+  return[main,...accs];
+}
+
+/* ───────── STATE + STORAGE ───────── */
+const LK="ironlog-logs", PK="ironlog-pos";
+let logs={}, week=1, day=0, unit="kg", saveT=null;
+try{logs=JSON.parse(localStorage.getItem(LK))||{};}catch(e){logs={};}
+try{const p=JSON.parse(localStorage.getItem(PK));if(p){unit=p.unit||"kg";}}catch(e){}
+
+const keyFor=(w,d)=>`w${w}d${d}`;
+const keyOf=()=>keyFor(week,day);
+function saveLogs(){clearTimeout(saveT);saveT=setTimeout(()=>{try{localStorage.setItem(LK,JSON.stringify(logs));}catch(e){}},400);}
+function savePos(){try{localStorage.setItem(PK,JSON.stringify({week,day,unit}));}catch(e){}}
+
+function getRow(ex,i,w=week,d=day){const k=keyFor(w,d);const a=logs[k]&&logs[k][ex];return(a&&a[i])||{weight:"",reps:"",rpe:"",done:false};}
+function setField(ex,i,f,v){
+  const k=keyOf();
+  if(!logs[k])logs[k]={};
+  if(!logs[k][ex])logs[k][ex]=[];
+  while(logs[k][ex].length<=i)logs[k][ex].push({weight:"",reps:"",rpe:"",done:false});
+  logs[k][ex][i]={...logs[k][ex][i],[f]:v};
+  saveLogs();
+}
+function lastWeekRef(ex){
+  const a=logs[`w${week-1}d${day}`]&&logs[`w${week-1}d${day}`][ex];
+  if(!a)return null;
+  let best=null;
+  a.forEach(s=>{const w=parseFloat(s.weight);if(!isNaN(w)&&(!best||w>parseFloat(best.weight)))best=s;});
+  if(!best)return null;
+  return `${best.weight}${unit} × ${best.reps||"–"}${best.rpe?` @ ${best.rpe}`:""}`;
+}
+
+/* ───────── SESSION COMPLETION ───────── */
+function sessionStatus(w,d){
+  const session=buildSession(w,d);
+  let total=0,done=0;
+  session.forEach(ex=>ex.rows.forEach((_,i)=>{total++;if(getRow(ex.name,i,w,d).done)done++;}));
+  return{total,done,complete:total>0&&done===total};
+}
+function findNextIncomplete(){
+  for(let w=1;w<=8;w++)for(let d=0;d<DAYS.length;d++)
+    if(!sessionStatus(w,d).complete)return{week:w,day:d};
+  return{week:8,day:DAYS.length-1};
+}
+
+/* ───────── RENDER ───────── */
+const $=id=>document.getElementById(id);
+const CHECK='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#161108" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+const BIGCHECK='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F5A524" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto;"><circle cx="12" cy="12" r="10"/><polyline points="16.5 9 11 14.5 8 11.5"/></svg>';
+
+function renderPills(){
+  $("pills").innerHTML=DAYS.map((d,i)=>{
+    const done=sessionStatus(week,i).complete;
+    return`<button class="pill${i===day?" active":""}${done?" done":""}" data-day="${i}"><b>D${i+1}${done?" ✓":""}</b><span>${d.short}</span></button>`;
+  }).join("");
+}
+
+function renderHeader(){
+  $("wkNum").textContent="WEEK "+week;
+  $("phase").textContent=phaseOf(week);
+  $("phase").style.color=week===8?"var(--amber)":"var(--steel)";
+  $("wkPrev").disabled=week===1; $("wkNext").disabled=week===8;
+  $("unitBtn").textContent=unit.toUpperCase();
+  $("volUnit").textContent=" "+unit;
+  $("banner").innerHTML = week===8
+    ? `<div class="banner"><svg width="13" height="13" viewBox="0 0 24 24" fill="#F5A524" style="flex:0 0 auto;margin-top:1px;"><path d="M12 2c1 4-2 5-2 8a3 3 0 006 0c0-1-.5-2-1-3 2 1 3 3 3 6a6 6 0 11-12 0c0-4 4-6 6-11z"/></svg><span>Deload week. Keep main lifts light &amp; fast (RPE 6) days 1–3. Later in the week, work up to a heavy single or triple to estimate your new max.</span></div>`
+    : "";
+}
+
+function renderMain(){
+  const session=buildSession(week,day);
+  let html=`<div id="sessionBanner"></div>`;
+  session.forEach((ex,ei)=>{
+    const last=ex.isMain?lastWeekRef(ex.name):null;
+    html+=`<section class="card${ex.isMain?" main":""}">
+      <div class="row between" style="align-items:flex-start;gap:8px;">
+        <div>
+          <h2>${ex.name}</h2>
+          <div class="eyebrow" style="margin-top:3px;">${ex.target}</div>
+          ${ex.hint?`<div class="hint">${ex.hint}</div>`:""}
+        </div>
+        ${ex.isMain?`<div style="text-align:right;flex:0 0 auto;">
+          <div class="eyebrow" style="color:var(--steelDim);">Last wk</div>
+          <div class="last${last?"":" empty"}">${last||"—"}</div></div>`:""}
+      </div>
+      <div class="heads">
+        <span style="width:26px;"></span>
+        ${ex.bodyweight
+          ? `<span class="colhead" style="flex:1;">Bodyweight</span>
+             <span class="colhead" style="width:56px;text-align:center;">Reps</span>`
+          : `<span class="colhead" style="flex:1;">Weight (${unit})</span>
+             <span class="colhead" style="width:56px;text-align:center;">Reps</span>
+             ${ex.isMain?`<span class="colhead" style="width:48px;text-align:center;">RPE</span>`:""}`}
+        <span style="width:38px;"></span>
+      </div>`;
+    ex.rows.forEach((row,i)=>{
+      const r=getRow(ex.name,i);
+      html+=`<div class="setRow${r.done?" done":""}" data-ex="${ei}" data-set="${i}">
+        <div class="setNo data">${row.label==="Top set"?"T":i+1}</div>
+        ${ex.bodyweight
+          ? `<span class="bwTag">Bodyweight</span>
+             <div style="width:56px;"><input class="cell" inputmode="numeric" placeholder="${row.reps}" data-f="reps" value="${r.reps}"></div>`
+          : `<div style="flex:1;"><input class="cell" inputmode="decimal" placeholder="–" data-f="weight" value="${r.weight}"></div>
+             <div style="width:56px;"><input class="cell" inputmode="numeric" placeholder="${row.reps}" data-f="reps" value="${r.reps}"></div>
+             ${ex.isMain?`<div style="width:48px;"><input class="cell" inputmode="decimal" placeholder="${row.rpe}" data-f="rpe" value="${r.rpe}"></div>`:""}`}
+        <button class="check${r.done?" done":""}" data-f="done">${CHECK}</button>
+      </div>`;
+    });
+    if(ex.rows.some(row=>row.label==="Back-off ~90%"))
+      html+=`<div class="subnote">Back-off sets ≈ 90% of your top-set weight</div>`;
+  });
+  html+=`<button class="clear" id="clearBtn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg> Clear this day’s log</button>
+  <p class="foot">Pick the weight that hits the target RPE. When you beat the rep target below that RPE, add a little next time. Tick every set to mark the session done — the app opens on your next session. Everything saves automatically on this device.</p>`;
+  $("main").innerHTML=html;
+  $("clearBtn").onclick=()=>{delete logs[keyOf()];saveLogs();renderMain();refreshStats();};
+  window.__session=session;
+}
+
+function updateSessionBanner(tot,done){
+  const el=$("sessionBanner");if(!el)return;
+  if(tot>0&&done===tot){
+    const nxt=findNextIncomplete();
+    const more=!(nxt.week===week&&nxt.day===day);
+    el.innerHTML=`<div class="doneCard">
+      <div class="row" style="gap:10px;align-items:center;">${BIGCHECK}
+        <div><div style="font-weight:700;font-size:15px;">Session complete</div>
+        <div class="eyebrow" style="margin-top:3px;">Week ${week} · ${DAYS[day].short} — all sets logged</div></div></div>
+      ${more
+        ? `<button class="nextBtn" id="nextBtn">Next: Week ${nxt.week} · ${DAYS[nxt.day].short} →</button>`
+        : `<div class="allDone">🎉 Program complete — every session done.</div>`}
+    </div>`;
+    const b=$("nextBtn");if(b)b.onclick=()=>{week=nxt.week;day=nxt.day;renderAll();window.scrollTo(0,0);};
+  }else{
+    const nxt=findNextIncomplete();
+    el.innerHTML=(nxt.week===week&&nxt.day===day)
+      ? `<div class="nextUp"><span class="eyebrow" style="color:var(--amber);">▸ Next up</span><span class="eyebrow">Week ${week} · ${DAYS[day].short}</span></div>`
+      : "";
+  }
+}
+
+function refreshStats(){
+  const session=window.__session||buildSession(week,day);
+  let tot=0,done=0,vol=0;
+  session.forEach(ex=>ex.rows.forEach((_,i)=>{
+    tot++;const r=getRow(ex.name,i);if(r.done)done++;
+    const w=parseFloat(r.weight),rp=parseFloat(r.reps);if(!isNaN(w)&&!isNaN(rp))vol+=w*rp;
+  }));
+  $("doneCt").textContent=done;$("totCt").textContent=tot;
+  $("rail").style.width=(tot?Math.round(done/tot*100):0)+"%";
+  $("vol").textContent=vol?Math.round(vol).toLocaleString():"—";
+  renderPills();
+  updateSessionBanner(tot,done);
+}
+
+function renderAll(){renderHeader();renderMain();refreshStats();savePos();}
+
+/* ───────── EVENTS ───────── */
+$("wkPrev").onclick=()=>{if(week>1){week--;renderAll();}};
+$("wkNext").onclick=()=>{if(week<8){week++;renderAll();}};
+$("unitBtn").onclick=()=>{unit=unit==="kg"?"lb":"kg";renderAll();};
+$("pills").onclick=e=>{const b=e.target.closest(".pill");if(b){day=+b.dataset.day;renderAll();}};
+
+// input edits — update in place, no re-render (keeps keyboard focus)
+$("main").addEventListener("input",e=>{
+  const inp=e.target.closest(".cell");if(!inp)return;
+  const rowEl=inp.closest(".setRow");
+  const ex=window.__session[+rowEl.dataset.ex].name;
+  setField(ex,+rowEl.dataset.set,inp.dataset.f,inp.value);
+  refreshStats();
+});
+// done toggle
+$("main").addEventListener("click",e=>{
+  const btn=e.target.closest(".check");if(!btn)return;
+  const rowEl=btn.closest(".setRow");
+  const ex=window.__session[+rowEl.dataset.ex].name, i=+rowEl.dataset.set;
+  const now=!getRow(ex,i).done;
+  setField(ex,i,"done",now);
+  rowEl.classList.toggle("done",now);btn.classList.toggle("done",now);
+  refreshStats();
+});
+
+/* On open, jump to the next session that still needs doing. */
+(()=>{const start=findNextIncomplete();week=start.week;day=start.day;})();
+renderAll();
+
+/* ───────── PWA SERVICE WORKER ───────── */
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+</script>
+</body>
+</html>

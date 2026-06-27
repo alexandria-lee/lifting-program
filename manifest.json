@@ -1,0 +1,19 @@
+{
+  "name": "Iron Log — 8-Week Block",
+  "short_name": "Iron Log",
+  "description": "Track sets, weights and session progress through an 8-week lifting block.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#101316",
+  "theme_color": "#101316",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
