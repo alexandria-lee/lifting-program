@@ -561,6 +561,19 @@ $("pills").onclick=e=>{const b=e.target.closest(".pill");if(b){day=+b.dataset.da
 new IntersectionObserver(([e])=>{$("hud").hidden=e.isIntersecting;},{threshold:0})
   .observe($("headerStats"));
 
+// Keep the fixed HUD pinned to the *visual* viewport. When the on-screen
+// keyboard opens, mobile browsers offset/scroll the visual viewport while a
+// position:fixed element stays anchored to the layout viewport — leaving the
+// HUD scrolled off the top of the visible area. Follow visualViewport.offsetTop
+// so it stays put.
+const vv=window.visualViewport;
+if(vv){
+  const pinHud=()=>{$("hud").style.transform=`translateY(${vv.offsetTop}px)`;};
+  vv.addEventListener("resize",pinHud);
+  vv.addEventListener("scroll",pinHud);
+  pinHud();
+}
+
 // input edits — update in place, no re-render (keeps keyboard focus)
 $("main").addEventListener("input",e=>{
   const inp=e.target.closest(".cell");if(!inp)return;
